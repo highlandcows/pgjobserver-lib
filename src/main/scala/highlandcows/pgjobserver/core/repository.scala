@@ -1,19 +1,12 @@
-package highlandcows.pgjobserver
+package highlandcows.pgjobserver.core
 
-import com.github.tminglei.slickpg.{
-  ExPostgresProfile,
-  PgDate2Support,
-  PgDateSupport,
-  PgEnumSupport,
-  PgPlayJsonSupport
-}
+import com.github.tminglei.slickpg._
+import highlandcows.pgjobserver.core.JobStatus.JobStatus
 import play.api.libs.json.JsValue
 import slick.basic.Capability
 import slick.jdbc.{ JdbcCapabilities, JdbcType }
 
 import java.sql.Date
-
-import JobStatus.JobStatus
 
 object repository {
   trait PostgresProfile
@@ -28,9 +21,9 @@ object repository {
     override protected def computeCapabilities: Set[Capability] =
       super.computeCapabilities + JdbcCapabilities.insertOrUpdate
 
-    override val api: API = new API {}
+    override val api: ApiExt = new ApiExt {}
 
-    trait API extends super.API with SimpleDateTimeImplicits with DateTimeImplicits with JsonImplicits {
+    trait ApiExt extends API with SimpleDateTimeImplicits with DateTimeImplicits with JsonImplicits {
       implicit val jobStatusTypeMapper: JdbcType[JobStatus]           = createEnumJdbcType("JobStatus", JobStatus)
       implicit val jobStatusListTypeMapper: JdbcType[List[JobStatus]] = createEnumListJdbcType("jobStatus", JobStatus)
     }

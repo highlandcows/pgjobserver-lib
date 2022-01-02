@@ -1,18 +1,21 @@
-package highlandcows.pgjobserver
+package highlandcows.pgjobserver.core
 
-import highlandcows.pgjobserver.helpers.DateExt
-import highlandcows.testutil
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
 import org.scalatest.matchers.must.Matchers._
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json._
 
+import java.util.concurrent.Executors
 import scala.concurrent.{ ExecutionContext, Future }
 
-class ModelTest extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
+class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
+  import helpers.DateExt
 
-  override implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
+  // We need at least 2 threads otherwise our tests will not run.
+  override implicit val executionContext: ExecutionContext =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2))
 
+  // We need a semi-random payload for storing when we run the tests.
   val testPayload: JsValue = JsObject(
     Seq(
       "type" -> JsString("testMessage"),
@@ -74,6 +77,8 @@ class ModelTest extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture 
     Future
       .sequence(List(jobsDAO.addJob(Job(testPayload)), jobsDAO.addJob(Job(testPayload))))
       .flatMap { jobs =>
+        // We update one job from "New" to "Initializing" so that when we query the new
+        // jobs we should only get 1 such job.
         jobsDAO.updateJob(jobs.head.copy(jobStatus = JobStatus.Initializing)).flatMap { _ =>
           jobsDAO.getNewJobs().map { jobs =>
             jobs.size shouldBe 1

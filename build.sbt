@@ -1,5 +1,3 @@
-import Helpers._
-
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 inThisBuild(
@@ -18,7 +16,7 @@ Test / fork := true
 
 lazy val root = (project in file("."))
   .settings(
-    name    := "scala-slick-pg-notifs",
+    name    := "pgjobserver-lib",
     version := "0.1.0-SNAPSHOT",
     scalacOptions ++= Seq("-Wunused", "-deprecation"),
     libraryDependencies ++= Dependencies.all

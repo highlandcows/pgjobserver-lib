@@ -1,6 +1,7 @@
-package highlandcows.pgjobserver
+package highlandcows.pgjobserver.core
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.matching.Regex
 
 package object helpers {
   implicit class FutureExt[T](future: Future[T]) {
@@ -13,6 +14,12 @@ package object helpers {
 
   implicit class URIExt(uri: java.net.URI) {
     def toJdbcUrl: String = s"jdbc:${uri.getScheme}://${uri.getHost}:${uri.getPort}${uri.getPath}"
+  }
+
+  implicit class StringExt(s: String) {
+    val snakeCaseRE: Regex = "([a-z])([A-Z])".r
+
+    def toSnakeCase: String = snakeCaseRE.replaceAllIn(s, "$1_$2").toLowerCase
   }
 
 }

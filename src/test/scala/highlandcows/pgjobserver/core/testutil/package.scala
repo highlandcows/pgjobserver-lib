@@ -1,4 +1,4 @@
-package highlandcows
+package highlandcows.pgjobserver.core
 
 import org.scalatest.{ FixtureAsyncTestSuite, FutureOutcome }
 import org.slf4j.{ Logger, LoggerFactory }
@@ -9,10 +9,10 @@ import scala.io.Source
 import scala.language.postfixOps
 
 package object testutil {
-  val logger: Logger = LoggerFactory.getLogger(getClass)
+  val logger: Logger = LoggerFactory.getLogger("testutil")
 
-  import pgjobserver.helpers.URIExt
-  import pgjobserver.repository.PostgresProfile.api._
+  import helpers.URIExt
+  import repository.PostgresProfile.api._
 
   def startPgTmp(): String = {
     val p = Runtime.getRuntime.exec("pg_tmp -t")
@@ -21,8 +21,8 @@ package object testutil {
 
   def createSchema()(implicit db: Database, ec: ExecutionContext): Future[Unit] = {
     val schema = Source.fromInputStream(getClass.getResourceAsStream("/database/jobs.sql")).getLines().mkString("\n")
-    val action = SimpleDBIO(_.connection.createStatement().executeUpdate(schema))
-    db.run(action).map(_ => logger.info("Created database schema from jobs.sql"))
+    val action = SimpleDBIO(_.connection.createStatement().executeUpdate(schema)).map(_ => ())
+    db.run(action)
   }
 
   def testDatabase(): Database = {
@@ -37,12 +37,12 @@ package object testutil {
   }
 
   // This mix-in trait allows us to have a separate database for each test.
-  trait PgTmpDatabaseFixture extends FixtureAsyncTestSuite {
+  trait PgTmpDatabaseFixture { this: FixtureAsyncTestSuite =>
     override type FixtureParam = Database
     override def withFixture(testCode: OneArgAsyncTest): FutureOutcome = {
       implicit val db: Database = testutil.testDatabase()
       Await.result(testutil.createSchema(), 5 seconds)
-      super.withFixture(testCode.toNoArgAsyncTest(db))
+      withFixture(testCode.toNoArgAsyncTest(db))
     }
   }
 }

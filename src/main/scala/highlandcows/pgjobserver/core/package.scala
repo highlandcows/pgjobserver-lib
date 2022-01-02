@@ -1,9 +1,9 @@
-package highlandcows
+package highlandcows.pgjobserver
 
 import play.api.libs.json.JsValue
 
-package object pgjobserver {
-  import highlandcows.pgjobserver.helpers._
+package object core {
+  import core.helpers.DateExt
 
   object JobStatus extends Enumeration {
     type JobStatus = Value
