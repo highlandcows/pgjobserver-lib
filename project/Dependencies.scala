@@ -7,7 +7,6 @@ object Dependencies {
     "com.typesafe.slick"  %% "slick-hikaricp"     % "3.3.3",
     "com.github.tminglei" %% "slick-pg"           % "0.20.2",
     "com.github.tminglei" %% "slick-pg_play-json" % "0.20.2",
-    "com.iheart"          %% "ficus"              % "1.5.1",
     "org.scalatest"       %% "scalatest"          % "3.2.9"  % Test,
     "ch.qos.logback"       % "logback-classic"    % "1.2.10" % Test
   )
