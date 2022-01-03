@@ -9,33 +9,30 @@ import java.util.concurrent.Executors
 import scala.concurrent.{ ExecutionContext, Future }
 
 class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
-  import helpers.DateExt
+  import testutil.{ randomChannelName, testPayload }
 
   // We need at least 2 threads otherwise our tests will not run.
   override implicit val executionContext: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2))
 
-  // We need a semi-random payload for storing when we run the tests.
-  val testPayload: JsValue = JsObject(
-    Seq(
-      "type" -> JsString("testMessage"),
-      "data" -> JsObject(Seq("field1" -> JsNumber(100), "field2" -> JsBoolean(true)))
-    )
-  )
-
   "Jobs repository" should "create a new job" in { implicit db =>
     val jobsDAO = new dao.JobsDAO()
-    jobsDAO.addJob(Job(testPayload)).map { job =>
+    jobsDAO.addJob(Job(randomChannelName, testPayload)).map { job =>
       job.id should not be 0
       job.jobStatus shouldBe JobStatus.New
     }
   }
 
   it should "create multiple jobs" in { implicit db =>
-    val jobsDAO = new dao.JobsDAO()
+    val jobsDAO     = new dao.JobsDAO()
+    val channelName = randomChannelName
     Future
       .sequence(
-        Seq(jobsDAO.addJob(Job(testPayload)), jobsDAO.addJob(Job(testPayload)), jobsDAO.addJob(Job(testPayload)))
+        Seq(
+          jobsDAO.addJob(Job(channelName, testPayload)),
+          jobsDAO.addJob(Job(channelName, testPayload)),
+          jobsDAO.addJob(Job(channelName, testPayload))
+        )
       )
       .flatMap { jobs =>
         jobs.size shouldBe 3
@@ -46,7 +43,7 @@ class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseF
 
   it should "update a job" in { implicit db =>
     val jobsDAO = new dao.JobsDAO()
-    jobsDAO.addJob(Job(testPayload)).flatMap { job =>
+    jobsDAO.addJob(Job(randomChannelName, testPayload)).flatMap { job =>
       jobsDAO
         .updateJobStatus(job.id, JobStatus.Initializing)
         .flatMap(_ =>
@@ -62,7 +59,7 @@ class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseF
 
   it should "have the expected JSON payload" in { implicit db =>
     val jobsDAO = new dao.JobsDAO()
-    jobsDAO.addJob(Job(testPayload, JobStatus.New, new java.util.Date().asSqlDate)).map { job =>
+    jobsDAO.addJob(Job(randomChannelName, testPayload)).map { job =>
       job.payload shouldEqual JsObject(
         Seq(
           "type" -> JsString("testMessage"),
@@ -73,9 +70,10 @@ class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseF
   }
 
   it should "find all new jobs" in { implicit db =>
-    val jobsDAO = new dao.JobsDAO()
+    val jobsDAO     = new dao.JobsDAO()
+    val channelName = randomChannelName
     Future
-      .sequence(List(jobsDAO.addJob(Job(testPayload)), jobsDAO.addJob(Job(testPayload))))
+      .sequence(List(jobsDAO.addJob(Job(channelName, testPayload)), jobsDAO.addJob(Job(channelName, testPayload))))
       .flatMap { jobs =>
         // We update one job from "New" to "Initializing" so that when we query the new
         // jobs we should only get 1 such job.

@@ -1,7 +1,6 @@
 package highlandcows.pgjobserver.core
 
 import com.github.tminglei.slickpg._
-import highlandcows.pgjobserver.core.JobStatus.JobStatus
 import play.api.libs.json.JsValue
 import slick.basic.Capability
 import slick.jdbc.{ JdbcCapabilities, JdbcType }
@@ -9,6 +8,8 @@ import slick.jdbc.{ JdbcCapabilities, JdbcType }
 import java.sql.Date
 
 object repository {
+  import JobStatus.JobStatus
+
   trait PostgresProfile
       extends ExPostgresProfile
       with PgDateSupport
@@ -34,11 +35,12 @@ object repository {
   class JobsSchema(tag: Tag) extends Table[Job](tag, "jobs") {
 
     def id: Rep[Int]                = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def channelName: Rep[String]    = column[String]("channel_name")
     def payload: Rep[JsValue]       = column[JsValue]("payload")
     def jobStatus: Rep[JobStatus]   = column[JobStatus]("status")
     def jobStatusUpdated: Rep[Date] = column[Date]("updated")
     def targetId: Rep[Option[Int]]  = column[Option[Int]]("target_id")
 
-    def * = (payload, jobStatus, jobStatusUpdated, targetId, id) <> (Job.tupled, Job.unapply)
+    def * = (channelName, payload, jobStatus, jobStatusUpdated, targetId, id) <> (Job.tupled, Job.unapply)
   }
 }

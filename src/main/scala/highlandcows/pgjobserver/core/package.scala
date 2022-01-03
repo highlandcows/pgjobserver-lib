@@ -17,6 +17,7 @@ package object core {
   }
 
   case class Job(
+    channelName: String,
     payload: JsValue,
     jobStatus: JobStatus.Value = JobStatus.New,
     jobStatusUpdated: java.sql.Date = new java.util.Date().asSqlDate,

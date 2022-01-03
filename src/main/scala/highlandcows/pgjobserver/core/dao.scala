@@ -3,8 +3,9 @@ package highlandcows.pgjobserver.core
 import org.postgresql.PGConnection
 import slick.sql.SqlStreamingAction
 
-import java.util.concurrent.Executors
 import scala.concurrent.{ ExecutionContext, Future }
+
+import java.util.concurrent.Executors
 
 object dao {
   import repository.PostgresProfile.api._
@@ -44,32 +45,33 @@ object dao {
 
   }
 
-  class JobsProcessor(channelName: String)(implicit ec: ExecutionContext) {
+  class JobsProcessor(val channelName: String)(implicit db: Database, ec: ExecutionContext) {
+    lazy val session: Session = db.createSession()
 
-    def startJobNotifications()(implicit db: Database): Future[Unit] = {
-      val action = SimpleDBIO[Unit](_.connection.createStatement().execute(s"LISTEN $channelName"))
+    def startJobNotifications(): Future[Unit] = {
+      val action = SimpleDBIO[Unit](_ => session.conn.createStatement().execute(s"LISTEN $channelName"))
       db.run(action)
     }
 
-    def stopJobNotifications()(implicit db: Database): Future[Unit] = {
-      val action = SimpleDBIO[Unit](_.connection.createStatement().execute(s"UNLISTEN $channelName"))
+    def stopJobNotifications(): Future[Unit] = {
+      val action = SimpleDBIO[Unit](_ => session.conn.createStatement().execute(s"UNLISTEN $channelName"))
       db.run(action)
     }
 
-    def processJobs[T](timeoutMs: Int = 0)(block: Seq[Int] => T)(implicit db: Database): Future[T] = {
-      // Get any pending notifications, irrespective of which channel they occurred on
-      val action = SimpleDBIO(_.connection.asInstanceOf[PGConnection].getNotifications(timeoutMs))
+    def processJobs[T](timeoutMs: Int = 0)(block: Seq[Int] => T): Future[T] = {
+      val action = SimpleDBIO(_ => session.conn.asInstanceOf[PGConnection].getNotifications(timeoutMs))
 
       // Get the notifications which are for the channel that we're listening and pass them to the
       // function object we were given to do whatever it is they need to do.
-      db.run(action).map(_.toSeq.filter(_.getName == channelName)).map(_.map(_.getParameter.toInt)).map(block)
+      db.run(action).map(_.toSeq).map(_.map(_.getParameter.toInt)).map(block)
     }
   }
 
   object JobsProcessor {
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
-    private def createFunctionSQL(channelName: String, functionName: String): String =
+    private def createFunctionSQL(channelName: String, functionName: String): String = {
+      // NB: `s` string interpolation expands `$$` to a single `$`, thus the quadruple `$` signs here
       s"""
          |CREATE OR REPLACE FUNCTION $functionName()
          |	RETURNS trigger AS
@@ -80,13 +82,15 @@ object dao {
          |END;
          |$$$$ LANGUAGE plpgsql;
          |""".stripMargin
+    }
 
-    private def createTriggerSQL(functionName: String): String =
+    private def createTriggerSQL(channelName: String, functionName: String): String =
       s"""
          |CREATE TRIGGER ${functionName}_status
          |	AFTER INSERT OR UPDATE OF status
          |	ON jobs
          |	FOR EACH ROW
+         |  WHEN (NEW.channel_name = '$channelName')
          |EXECUTE PROCEDURE $functionName();
          |""".stripMargin
 
@@ -105,16 +109,20 @@ object dao {
       val functionName = s"${channelName}_notify"
       val actions = DBIO.seq(
         SimpleDBIO[Unit](_.connection.createStatement.execute(createFunctionSQL(channelName, functionName))),
-        SimpleDBIO[Unit](_.connection.createStatement.execute(createTriggerSQL(functionName)))
+        SimpleDBIO[Unit](_.connection.createStatement.execute(createTriggerSQL(channelName, functionName)))
       )
       db.run(actions)
     }
 
+    /** Create/connect to a `JobsProcessor` object for the current database. We return a `Future` here because we need
+      * to install/confirm that we have the specified function and trigger in that database.
+      */
     def apply(channelName: String)(implicit db: Database): Future[JobsProcessor] = {
+      val functionName = s"${channelName}_notify"
       for {
         notifyDefined <- isNotifyFunctionDefined(channelName)
         _ <-
-          if (!notifyDefined) createNotifyFunction(channelName).map(_ => createTriggerSQL(channelName))
+          if (!notifyDefined) createNotifyFunction(channelName).map(_ => createTriggerSQL(channelName, functionName))
           else Future.successful(())
       } yield new JobsProcessor(channelName)
     }

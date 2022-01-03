@@ -2,14 +2,27 @@ package highlandcows.pgjobserver.core
 
 import org.scalatest.{ FixtureAsyncTestSuite, FutureOutcome }
 import org.slf4j.{ Logger, LoggerFactory }
+import play.api.libs.json.{ JsBoolean, JsNumber, JsObject, JsString, JsValue }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.io.Source
 import scala.language.postfixOps
+import scala.util.Random
 
 package object testutil {
   val logger: Logger = LoggerFactory.getLogger("testutil")
+
+  val rand              = new Random()
+  def randomChannelName = s"ch_${rand.nextInt().toHexString}"
+
+  // We need a semi-random payload for storing when we run the tests.
+  val testPayload: JsValue = JsObject(
+    Seq(
+      "type" -> JsString("testMessage"),
+      "data" -> JsObject(Seq("field1" -> JsNumber(100), "field2" -> JsBoolean(true)))
+    )
+  )
 
   import helpers.URIExt
   import repository.PostgresProfile.api._
