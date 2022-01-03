@@ -18,8 +18,8 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Check format
-      run: sbt scalafixAll --check
+    - name: Check code formatting/imports
+      run: sbt "scalafixAll --check"
     - name: Run tests
       run: sbt test
     - name: Cache

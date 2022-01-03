@@ -5,8 +5,9 @@ import org.scalatest.matchers.must.Matchers._
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import play.api.libs.json._
 
-import java.util.concurrent.Executors
 import scala.concurrent.{ ExecutionContext, Future }
+
+import java.util.concurrent.Executors
 
 class JobCreationTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
   import testutil.{ randomChannelName, testPayload }

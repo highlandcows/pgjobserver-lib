@@ -14,7 +14,7 @@ package object testutil {
   val logger: Logger = LoggerFactory.getLogger("testutil")
 
   val rand              = new Random()
-  def randomChannelName = s"ch_${rand.nextInt().toHexString}"
+  def randomChannelName: String = s"ch_${rand.nextInt().toHexString}"
 
   // We need a semi-random payload for storing when we run the tests.
   val testPayload: JsValue = JsObject(
