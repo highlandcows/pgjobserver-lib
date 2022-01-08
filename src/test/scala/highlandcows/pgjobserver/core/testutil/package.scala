@@ -35,9 +35,10 @@ package object testutil {
     logger.info(s"Running $pgTmpCmd")
     val p      = Runtime.getRuntime.exec(pgTmpCmd)
     val output = Source.fromInputStream(p.getInputStream).getLines().mkString
+    val error  = Source.fromInputStream(p.getErrorStream).getLines().mkString
     p.waitFor()
     if (p.exitValue() != 0) {
-      throw new RuntimeException(s"Failed to connect: $output")
+      throw new RuntimeException(s"Failed to connect: $error")
     }
     output
   }
