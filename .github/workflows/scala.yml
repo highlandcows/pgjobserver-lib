@@ -10,9 +10,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    env:
-      PG_TMP_CMD: '/pg_tmp.sh'
-      DB_USER: 'postgres'
 
     steps:
       - uses: actions/checkout@v2
@@ -25,6 +22,9 @@ jobs:
         run: sbt "scalafixAll --check"
       - name: Run tests
         uses: ./.github/actions/run-tests-with-pg-tmp
+        env:
+          PG_TMP_CMD: '/pg_tmp.sh'
+          DB_USER: 'postgres'
       - name: Cache
         uses: actions/cache@v2.1.7
         with:
