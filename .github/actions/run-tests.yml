@@ -1,0 +1,7 @@
+# run-tests.yml
+name: 'run-tests'
+description: 'Runs tests using pg_tmp'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

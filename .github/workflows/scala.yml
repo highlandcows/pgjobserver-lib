@@ -21,8 +21,7 @@ jobs:
     - name: Check code formatting/imports
       run: sbt "scalafixAll --check"
     - name: Run tests
-      run: sbt test
-      uses: actions/pg-tmp-action
+      uses: actions/run-tests
     - name: Cache
       uses: actions/cache@v2.1.7
       with:

@@ -1,1 +1,1 @@
-echo pg_tmp is installed
+sbt test
