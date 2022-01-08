@@ -11,8 +11,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      PG_TMP_CMD: /pg_tmp.sh
-      DB_USER: postgres
+      PG_TMP_CMD: '/pg_tmp.sh'
+      DB_USER: 'postgres'
 
     steps:
       - uses: actions/checkout@v2
