@@ -1,4 +1,4 @@
-[Build Status](https://github.com/highlandcows/pgjobserver-lib/actions/workflows/scala.yml/badge.svg)
+![Build Status](https://github.com/highlandcows/pgjobserver-lib/actions/workflows/scala.yml/badge.svg)
 
 # highlandcows pgjobserver-lib
 This project implements a simple PostreSQL-based job queue library based on
