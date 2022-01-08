@@ -10,6 +10,9 @@ import java.util.concurrent.Executors
 object dao {
   import repository.PostgresProfile.api._
 
+  /** Class the encapsulates the `jobs` table. Note that each of the methods takes in an implicit Slick `Database`
+    * object as we need that to run the associated action on.
+    */
   class JobsDAO() {
 
     private val jobs = TableQuery[repository.JobsSchema]
@@ -39,31 +42,50 @@ object dao {
       ec: ExecutionContext
     ): Future[Unit] = {
       val q      = for { job <- jobs if job.id === id } yield job.jobStatus
-      val action = q.update(jobStatus).map(_ => ())
-      db.run(action)
+      val action = q.update(jobStatus)
+      db.run(action).map {
+        case 1 =>
+          Future.successful(())
+        case n =>
+          throw new RuntimeException(s"Updated to job $id to $jobStatus failed: $n rows updated")
+      }
     }
 
   }
 
+  /** Class that encapsulates listening for PostgreSQL notifications. Note that we take in a database when the instance
+    * is created as we must use the same connection for all operations, i.e., listening, receiving, and stopping
+    * listening. Also note that if the `jobs` table is updated while there is no listener, those events will be
+    * effectively lost.
+    *
+    * @see
+    *   https://www.postgresql.org/docs/current/sql-notify.html
+    */
   class JobsProcessor(val channelName: String)(implicit db: Database, ec: ExecutionContext) {
     lazy val session: Session = db.createSession()
 
+    /** Start listening for updates to `jobs` table for updates */
     def startJobNotifications(): Future[Unit] = {
       val action = SimpleDBIO[Unit](_ => session.conn.createStatement().execute(s"LISTEN $channelName"))
       db.run(action)
     }
 
+    /** Stop listening for updates to `jobs` table for updates */
     def stopJobNotifications(): Future[Unit] = {
       val action = SimpleDBIO[Unit](_ => session.conn.createStatement().execute(s"UNLISTEN $channelName"))
       db.run(action)
     }
 
+    /** Get the notifications for the channel that we're listening and pass them to the function object we were given to
+      * do whatever it is they need to do. Note that the supplied function will be given a collection of the `jobs.id`
+      * field.
+      */
     def processJobs[T](timeoutMs: Int = 0)(block: Seq[Int] => T): Future[T] = {
-      val action = SimpleDBIO(_ => session.conn.asInstanceOf[PGConnection].getNotifications(timeoutMs))
+      val action = SimpleDBIO(_ =>
+        session.conn.asInstanceOf[PGConnection].getNotifications(timeoutMs).map(_.getParameter.toInt).toSeq
+      )
 
-      // Get the notifications which are for the channel that we're listening and pass them to the
-      // function object we were given to do whatever it is they need to do.
-      db.run(action).map(_.toSeq).map(_.map(_.getParameter.toInt)).map(block)
+      db.run(action).map(block)
     }
   }
 
@@ -105,8 +127,7 @@ object dao {
       db.run(action).map(count => count.head > 0)
     }
 
-    private def createNotifyFunction(channelName: String)(implicit db: Database): Future[Unit] = {
-      val functionName = s"${channelName}_notify"
+    private def createNotifyFunction(channelName: String, functionName: String)(implicit db: Database): Future[Unit] = {
       val actions = DBIO.seq(
         SimpleDBIO[Unit](_.connection.createStatement.execute(createFunctionSQL(channelName, functionName))),
         SimpleDBIO[Unit](_.connection.createStatement.execute(createTriggerSQL(channelName, functionName)))
@@ -117,14 +138,18 @@ object dao {
     /** Create/connect to a `JobsProcessor` object for the current database. We return a `Future` here because we need
       * to install/confirm that we have the specified function and trigger in that database.
       */
-    def apply(channelName: String)(implicit db: Database): Future[JobsProcessor] = {
-      val functionName = s"${channelName}_notify"
-      for {
-        notifyDefined <- isNotifyFunctionDefined(channelName)
-        _ <-
-          if (!notifyDefined) createNotifyFunction(channelName).map(_ => createTriggerSQL(channelName, functionName))
-          else Future.successful(())
-      } yield new JobsProcessor(channelName)
-    }
+    def apply(channelName: String)(implicit db: Database): Future[JobsProcessor] =
+      maybeCreateNotifyFunction(channelName, s"${channelName}_notify").map(_ => new JobsProcessor(channelName))
+
+    // Create the notification trigger in the database if it does not already exist.
+    private def maybeCreateNotifyFunction(channelName: String, functionName: String)(implicit
+      db: Database
+    ): Future[Unit] =
+      isNotifyFunctionDefined(functionName).flatMap {
+        case false =>
+          createNotifyFunction(channelName, functionName)
+        case true =>
+          Future.successful(())
+      }
   }
 }

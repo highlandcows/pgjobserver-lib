@@ -1,0 +1,7 @@
+# pg-tmp-action.yml
+name: 'pg_tmp'
+description: 'Make pg_tmp available for tests'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

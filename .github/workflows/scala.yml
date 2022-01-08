@@ -22,6 +22,7 @@ jobs:
       run: sbt "scalafixAll --check"
     - name: Run tests
       run: sbt test
+      uses: actions/pg-tmp-action
     - name: Cache
       uses: actions/cache@v2.1.7
       with:

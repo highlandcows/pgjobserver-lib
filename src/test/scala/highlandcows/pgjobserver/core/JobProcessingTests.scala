@@ -3,13 +3,11 @@ package highlandcows.pgjobserver.core
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
+import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-import java.util.concurrent.Executors
-
-import dao.JobsProcessor
-
 class JobProcessingTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
+  import dao.JobsProcessor
 
   // We need at least 2 threads otherwise our tests will not run.
   override implicit val executionContext: ExecutionContext =
@@ -34,14 +32,13 @@ class JobProcessingTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabas
 
   it should "create 1 notification for 1 job added" in { implicit db =>
     val jobsDAO = new dao.JobsDAO()
-    JobsProcessor("test_channel").flatMap { jobsProcessor =>
-      jobsProcessor.startJobNotifications()
-      jobsDAO.addJob(Job("test_channel", testutil.testPayload)).flatMap { _ =>
-        jobsProcessor.processJobs(1000) { notifs =>
-          notifs.size shouldBe 1
-        }
-      }
-    }
+    for {
+      jobsProcessor <- JobsProcessor("test_channel")
+      _             <- jobsProcessor.startJobNotifications()
+      job           <- jobsDAO.addJob(Job("test_channel", testutil.testPayload))
+      notifs        <- jobsProcessor.processJobs(500)(identity)
+    } yield notifs.size == 1 && notifs.head == job.id shouldBe true
+
   }
 
   it should "create 1 notification per channel" in { implicit db =>

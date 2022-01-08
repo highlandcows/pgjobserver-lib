@@ -16,8 +16,9 @@ Test / fork := true
 
 lazy val root = (project in file("."))
   .settings(
-    name    := "pgjobserver-lib",
-    version := "0.1.0-SNAPSHOT",
+    organization := "highlandcows",
+    name         := "pgjobserver-lib",
+    version      := Helpers.sysPropOrDefault("version", "0.1.0-SNAPSHOT"),
     scalacOptions ++= Seq("-Wunused", "-deprecation"),
     libraryDependencies ++= Dependencies.all
   )

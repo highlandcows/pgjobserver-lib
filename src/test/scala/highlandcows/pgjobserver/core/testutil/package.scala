@@ -13,7 +13,7 @@ import scala.util.Random
 package object testutil {
   val logger: Logger = LoggerFactory.getLogger("testutil")
 
-  val rand              = new Random()
+  lazy val rand                 = new Random()
   def randomChannelName: String = s"ch_${rand.nextInt().toHexString}"
 
   // We need a semi-random payload for storing when we run the tests.
