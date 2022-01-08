@@ -1,10 +1,10 @@
 package highlandcows.pgjobserver.core
 
 import com.typesafe.config.{ Config, ConfigFactory }
+import net.ceedubs.ficus.Ficus._
 import org.scalatest.{ FixtureAsyncTestSuite, FutureOutcome }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.libs.json.{ JsBoolean, JsNumber, JsObject, JsString, JsValue }
-import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
