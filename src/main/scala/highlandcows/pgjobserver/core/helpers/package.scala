@@ -13,7 +13,8 @@ package object helpers {
   }
 
   implicit class URIExt(uri: java.net.URI) {
-    def toJdbcUrl: String = s"jdbc:${uri.getScheme}://${uri.getHost}:${uri.getPort}${uri.getPath}"
+    def toJdbcUrl(user: Option[String] = None): String =
+      s"jdbc:${uri.getScheme}://${uri.getHost}:${uri.getPort}${uri.getPath}${user.map(u => s"?user=$u").getOrElse("")}"
   }
 
   implicit class StringExt(s: String) {

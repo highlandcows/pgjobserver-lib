@@ -28,3 +28,5 @@ RUN \
   make install
 
 COPY entrypoint.sh /entrypoint.sh
+
+COPY pg_tmp.sh /pg_tmp.sh

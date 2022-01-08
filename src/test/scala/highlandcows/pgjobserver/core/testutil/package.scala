@@ -1,8 +1,10 @@
 package highlandcows.pgjobserver.core
 
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ FixtureAsyncTestSuite, FutureOutcome }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.libs.json.{ JsBoolean, JsNumber, JsObject, JsString, JsValue }
+import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -12,6 +14,7 @@ import scala.util.Random
 
 package object testutil {
   val logger: Logger = LoggerFactory.getLogger("testutil")
+  val config: Config = ConfigFactory.load().withFallback(ConfigFactory.systemEnvironment()).resolve()
 
   lazy val rand                 = new Random()
   def randomChannelName: String = s"ch_${rand.nextInt().toHexString}"
@@ -28,8 +31,15 @@ package object testutil {
   import repository.PostgresProfile.api._
 
   def startPgTmp(): String = {
-    val p = Runtime.getRuntime.exec("pg_tmp -t")
-    Source.fromInputStream(p.getInputStream).getLines().mkString
+    val pgTmpCmd = config.as[String]("tests.pgTmpCmd")
+    logger.info(s"Running $pgTmpCmd")
+    val p      = Runtime.getRuntime.exec(pgTmpCmd)
+    val output = Source.fromInputStream(p.getInputStream).getLines().mkString
+    p.waitFor()
+    if (p.exitValue() != 0) {
+      throw new RuntimeException(s"Failed to connect: $output")
+    }
+    output
   }
 
   def createSchema()(implicit db: Database, ec: ExecutionContext): Future[Unit] = {
@@ -39,7 +49,7 @@ package object testutil {
   }
 
   def testDatabase(): Database = {
-    val pgTmpUrl = new java.net.URI(testutil.startPgTmp()).toJdbcUrl
+    val pgTmpUrl = new java.net.URI(testutil.startPgTmp()).toJdbcUrl(config.as[Option[String]]("tests.database.user"))
     val db = Database.forURL(
       pgTmpUrl,
       executor =
