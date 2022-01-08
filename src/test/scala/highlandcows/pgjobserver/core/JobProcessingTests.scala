@@ -3,8 +3,9 @@ package highlandcows.pgjobserver.core
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
+
+import java.util.concurrent.Executors
 
 class JobProcessingTests extends FixtureAsyncFlatSpec with testutil.PgTmpDatabaseFixture {
   import dao.JobsProcessor
