@@ -1,4 +1,4 @@
-# run-tests.yml
+# action.yml
 name: 'run-tests'
 description: 'Runs tests using pg_tmp'
 
