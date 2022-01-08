@@ -21,7 +21,7 @@ jobs:
       - name: Check code formatting/imports
         run: sbt "scalafixAll --check"
       - name: Run tests
-        uses: highlandcows/pgjobserver-lib/run-tests-with-pg-tmp@v2
+        uses: highlandcows/pgjobserver-lib/actions/run-tests-with-pg-tmp@v2
       - name: Cache
         uses: actions/cache@v2.1.7
         with:
