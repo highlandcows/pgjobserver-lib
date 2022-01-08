@@ -1,3 +1,7 @@
 #!/bin/sh -l
-cd $GITHUB_WORKSPACE
-sbt test
+if [ -d $GITHUB_WORKSPACE ]
+then
+  sbt test
+else
+  bash
+fi

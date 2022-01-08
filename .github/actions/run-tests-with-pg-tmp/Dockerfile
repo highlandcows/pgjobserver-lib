@@ -1,9 +1,5 @@
 FROM postgres:14.1
 
-COPY ephemeralpg-3.1.tar.gz /tmp
-
-COPY entrypoint.sh /entrypoint.sh
-
 RUN \
   apt-get update -y && \
   apt-get -y install apt-transport-https curl gnupg make sudo unzip zip
@@ -23,10 +19,10 @@ RUN \
   chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg && \
   apt-get update -y && sudo apt-get install -y sbt
 
+COPY ephemeralpg-3.1.tar.gz /tmp
+
 RUN \
   cd /tmp && \
   tar xzf ephemeralpg-3.1.tar.gz && \
   cd ephemeralpg-3.1 && \
   make install
-
-ENTRYPOINT ["/entrypoint.sh"]
