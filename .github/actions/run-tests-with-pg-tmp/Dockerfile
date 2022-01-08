@@ -26,3 +26,5 @@ RUN \
   tar xzf ephemeralpg-3.1.tar.gz && \
   cd ephemeralpg-3.1 && \
   make install
+
+COPY entrypoint.sh /entrypoint.sh
