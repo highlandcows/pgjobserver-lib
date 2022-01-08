@@ -50,13 +50,12 @@ package object testutil {
 
   def testDatabase(): Database = {
     val pgTmpUrl = new java.net.URI(testutil.startPgTmp()).toJdbcUrl(config.as[Option[String]]("tests.database.user"))
-    val db = Database.forURL(
+    logger.info(s"Connecting to database $pgTmpUrl")
+    Database.forURL(
       pgTmpUrl,
       executor =
         AsyncExecutor(getClass.getSimpleName, minThreads = 10, maxThreads = 10, queueSize = 1000, maxConnections = 10)
     )
-    logger.info(s"Connected to database $pgTmpUrl")
-    db
   }
 
   // This mix-in trait allows us to have a separate database for each test.
