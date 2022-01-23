@@ -20,12 +20,14 @@ jobs:
           distribution: 'adopt'
       - name: Check code formatting/imports
         run: sbt "scalafixAll --check"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run tests
         uses: ./.github/actions/run-tests-with-pg-tmp
         env:
           PG_TMP_CMD: '/pg_tmp.sh'
           DB_USER: 'postgres'
-          GITHUB_TOKEN: ''
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Cache
         uses: actions/cache@v2.1.7
         with:
