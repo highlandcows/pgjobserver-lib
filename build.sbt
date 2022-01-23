@@ -14,6 +14,14 @@ ThisBuild / scalaVersion := "2.13.7"
 // Fork when we run tests because our tests fork child processes themselves
 Test / fork := true
 
+// GitHub publish set-up
+githubOwner       := "highlandcows"
+githubRepository  := "pgjobserver-lib"
+githubTokenSource := TokenSource.GitConfig("github.token") || TokenSource.Environment("GITHUB_TOKEN")
+
+publishMavenStyle         := true
+ThisBuild / versionScheme := Some("early-semver")
+
 lazy val root = (project in file("."))
   .settings(
     organization := "highlandcows",
