@@ -25,6 +25,7 @@ jobs:
         env:
           PG_TMP_CMD: '/pg_tmp.sh'
           DB_USER: 'postgres'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
       - name: Cache
         uses: actions/cache@v2.1.7
         with:
